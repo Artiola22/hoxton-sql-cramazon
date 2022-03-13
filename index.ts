@@ -2,7 +2,10 @@ import { PrismaClient } from "@prisma/client";
 import express from "express";
 import cors from "cors";
 import { create } from "ts-node";
-import { isExpressionWithTypeArguments, isTemplateExpression } from "typescript";
+import {
+  isExpressionWithTypeArguments,
+  isTemplateExpression,
+} from "typescript";
 
 const app = express();
 app.use(cors());
@@ -126,71 +129,88 @@ app.post("/addItem", async (req, res) => {
   }
 });
 
-app.post('/signup', async(req, res)=>{
-    const {name, email }=  req.body
-    try{
-        const oldUser = await prisma.user.findUnique({ where: {email}})
-        if(oldUser) {
-            res.status(400).send({ message: "This user already exists!!"})
-
-        }else{
-            const newUser = await prisma.user.create({
-                data: {
-                    name: name, 
-                    email: email
-                }
-            })
-            res.status(200).send(newUser)
-        }
+app.post("/signup", async (req, res) => {
+  const { name, email } = req.body;
+  try {
+    const oldUser = await prisma.user.findUnique({ where: { email } });
+    if (oldUser) {
+      res.status(400).send({ message: "This user already exists!!" });
+    } else {
+      const newUser = await prisma.user.create({
+        data: {
+          name: name,
+          email: email,
+        },
+      });
+      res.status(200).send(newUser);
     }
-    catch(err){
-        //@ts-ignore
-        res.status(404).send(`<pre>${err.message}</pre>`)
-    }
-})
+  } catch (err) {
+    //@ts-ignore
+    res.status(404).send(`<pre>${err.message}</pre>`);
+  }
+});
 
-app.post('/signin', async(req, res )=>{
-    const {name, email} = req.body
-    try{
-        const userMatch = await prisma.user.findFirst(
-            {where:
-                 {name: name, email: email} })
-                 if(userMatch){
-                     res.status(200).send(userMatch)
-                 }else{
-                     res.status(400).send({message: 'Name or email incorrect!!!'})
-                 }
+app.post("/signin", async (req, res) => {
+  const { name, email } = req.body;
+  try {
+    const userMatch = await prisma.user.findFirst({
+      where: { name: name, email: email },
+    });
+    if (userMatch) {
+      res.status(200).send(userMatch);
+    } else {
+      res.status(400).send({ message: "Name or email incorrect!!!" });
     }
-    catch(err){
-        //@ts-ignore
-        res.status(404).send(`<pre>${err.message}</pre>`)
+  } catch (err) {
+    //@ts-ignore
+    res.status(404).send(`<pre>${err.message}</pre>`);
+  }
+});
+
+app.patch("/users/:email", async (req, res) => {
+  const email = req.params.email;
+  const name = req.body;
+  try {
+    const match = await prisma.user.findUnique({ where: { email } });
+    if (match) {
+      const updated = await prisma.user.update({
+        where: { email },
+        data: { name: name !== null ? name : undefined },
+      });
+      res.status(200).send(updated);
+    } else {
+      res.status(404).send({ error: "User not found!!" });
     }
-})
+  } catch (err) {
+    //@ts-ignore
+    res.status(404).send(`<pre>${err.message}</pre>`);
+  }
+});
 
-app.patch('/users/:email', async(req, res)=> {
-    const email = req.params.email
-    const name  = req.body
-    try{
-        const match = await prisma.user.findUnique({ where: {email}})
-        if(match){
+//delete user (be careful here :P)
+app.delete("/users/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const deleteUser = await prisma.user.delete({ where: { id: id } });
+    res.status(200).send(deleteUser);
+  } catch (err) {
+    //@ts-ignore
+    res.status(404).send(`<pre>${err.message}</pre>`);
+  }
+});
 
-            const updated = await prisma.user.update({
-                where: {email},
-                data: { name: name !== null ? name : undefined}
-            })
-            res.status(200).send(updated)
-        }else {
-            res.status(404).send({ error: "User not found!!"});
-        }
-        
-    }catch(err){
-        //@ts-ignore
-        res.status(404).send(`<pre>${err.message}</pre>`)
-    }
-})
-
+//delete order
+app.delete("/orders/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const deleteOrder = await prisma.order.delete({ where: { id: id } });
+    res.status(200).send(deleteOrder);
+  } catch (err) {
+    //@ts-ignore
+    res.status(404).send(`<pre>${err.message}</pre>`);
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on : http://localhost:${PORT}`);
 });
-
